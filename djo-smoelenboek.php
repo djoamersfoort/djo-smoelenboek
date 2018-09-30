@@ -97,7 +97,7 @@ if (!class_exists('DJO_Smoelenboek')) {
 
       $db = DJO_Smoelenboek::db_connect();
       if (is_wp_error($db)) return $db->get_error_message();
-      $query = "SELECT contact.id, contact.voornaam, contact.achternaam, dagdeel.dag " .
+      $query = "SELECT contact.id, contact.voornaam, dagdeel.dag " .
                "FROM contact " .
                "INNER JOIN contact_dagdeel cd " .
                "INNER JOIN dagdeel ".
@@ -113,21 +113,24 @@ if (!class_exists('DJO_Smoelenboek')) {
       $counter = 1;
       while ($row = $stmt->fetch()) {
         $id = $row['id'];
-        $voornaam = $row['voornaam'];
+        $voornaam = utf8_encode($row['voornaam']);
 
         $is_present = wp_remote_get('https://admin.djoamersfoort.nl/thumb.php?id='.$id);
         if (!is_wp_error($is_present) && $is_present['body'] == '1') {
-          $output .= "<dl class='gallery-item'>\n";
-          $output .= "<dt class='gallery-icon portrait'>\n";
-          $output .= "<img width='100' height='150' src='https:\/\/admin.djoamersfoort.nl\/images\/contacten\/$id.jpg' class='attachment-thumbnail size-thumbnail' alt='' aria-describedby='gallery-1-$id' />\n";
-          $output .= "</dt>\n";
-          $output .= "<dd class='wp-caption-text gallery-caption' id='gallery-1-$id'>$voornaam</dd>\n";
-          $output .= "</dl>\n";
+          $imgurl = "https:\/\/admin.djoamersfoort.nl\/images\/contacten\/$id.jpg";
+        } else {
+          $imgurl = '/wp-content/plugins/djo-smoelenboek/mm.png';
+        }
+        $output .= "<dl class='gallery-item'>\n";
+        $output .= "<dt class='gallery-icon portrait'>\n";
+        $output .= "<img width='100' height='150' src='$imgurl' class='attachment-thumbnail size-thumbnail' alt='' aria-describedby='gallery-1-$id' />\n";
+        $output .= "</dt>\n";
+        $output .= "<dd class='wp-caption-text gallery-caption' id='gallery-1-$id'>$voornaam</dd>\n";
+        $output .= "</dl>\n";
 
-          if ($counter++ == 4) {
-            $counter = 1;
-            $output .= '<br style="clear: both" />';
-          }
+        if ($counter++ == 4) {
+          $counter = 1;
+          $output .= '<br style="clear: both" />';
         }
       }
       $output .= '<br style="clear: both"/></div>';
