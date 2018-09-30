@@ -35,7 +35,6 @@ if (!class_exists('DJO_Smoelenboek')) {
     }
 
     private static function db_connect() {
-      //TODO: Create a WP settings page
       if (! self::$db) {
         try {
           $db_host = get_option('djo-smoelen-server');
