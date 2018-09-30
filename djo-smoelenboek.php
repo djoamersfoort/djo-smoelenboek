@@ -72,7 +72,7 @@ if (!class_exists('DJO_Smoelenboek')) {
 
         <tr valign="top">
         <th scope="row">Password</th>
-        <td><input type="text" name="djo-smoelen-password" value="<?php echo esc_attr( get_option('djo-smoelen-password') ); ?>" /></td>
+        <td><input type="password" name="djo-smoelen-password" value="<?php echo esc_attr( get_option('djo-smoelen-password') ); ?>" /></td>
         </tr>
 
         <tr valign="top">
