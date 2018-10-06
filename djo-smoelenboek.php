@@ -117,7 +117,7 @@ if (!class_exists('DJO_Smoelenboek')) {
 
         $is_present = wp_remote_get('https://admin.djoamersfoort.nl/thumb.php?id='.$id);
         if (!is_wp_error($is_present) && $is_present['body'] == '1') {
-          $imgurl = "https:\/\/admin.djoamersfoort.nl\/images\/contacten\/$id.jpg";
+          $imgurl = "https:\/\/admin.djoamersfoort.nl\/images\/contacten\/thumbs\/$id.jpg";
         } else {
           $imgurl = '/wp-content/plugins/djo-smoelenboek/mm.png';
         }
