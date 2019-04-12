@@ -4,7 +4,7 @@
  * Plugin URI: https://github.com/rmoesbergen/djo-smoelenboek
  * Description: Plugin voor de DJO smoelenboek koppeling met de ledenadministratie
  * Author: Ronald Moesbergen
- * Version: 0.1.0
+ * Version: 0.1.1
  */
 
 defined('ABSPATH') or die('Go away');
