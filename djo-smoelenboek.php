@@ -16,6 +16,7 @@ if (!class_exists('DJO_Smoelenboek')) {
 
     public static function init() {
       add_shortcode('djo_smoelenboek', array('DJO_Smoelenboek', 'smoelenboek'));
+      add_shortcode('djo_smoelenboek_user', array('DJO_Smoelenboek', 'smoelenboek_user'));
       if ( is_admin() ) {
         add_action( 'admin_init', array('DJO_Smoelenboek', 'register_settings' ));
         add_action( 'admin_menu', array('DJO_Smoelenboek', 'adminmenu'));
@@ -57,6 +58,31 @@ if (!class_exists('DJO_Smoelenboek')) {
       echo '</div>';
     }
 
+    public static function smoelenboek_user($args) {
+      $params = shortcode_atts(array('userid' => 0, 'width' => 100, 'height' => 150), $args);
+      $userid = $params['userid'];
+      $width  = $params['width'];
+      $height = $params['height'];
+
+      if (get_current_user_id() == 0) { return; }
+      if ($userid == 0) return "Please specify userid";
+
+      $idp_access_token = get_user_meta(get_current_user_id(), 'woi_idp_access_token', true);
+      $options = array('headers' => array('Authorization' => "IDP $idp_access_token"));
+      $url = get_option('djo-smoelen-url');
+      $response = wp_remote_get("$url/$userid/", $options);
+
+      if (is_array($response)) {
+        $json = wp_remote_retrieve_body($response);
+        $member = json_decode($json);
+        $photo = $member->photo;
+
+	return "<img class='alignnone size-thumbnail' src='$photo' alt='' width='$width' height='$height' />";
+      } else {
+        return "Error receiving smoelenboek response: " . $response->get_error_message();
+      }
+    }
+
     public static function smoelenboek($args) {
       $params = shortcode_atts(array('dag' => 'vrijdag'), $args);
       $dag = $params['dag'];
@@ -81,7 +107,7 @@ if (!class_exists('DJO_Smoelenboek')) {
 
         $output .= "<dl class='gallery-item'>\n";
         $output .= "<dt class='gallery-icon portrait'>\n";
-        $output .= "<img width='100' height='150' src='$imgurl' class='attachment-thumbnail size-thumbnail' alt='' aria-describedby='gallery-1-$id' />\n";
+        $output .= "<img width='100' height='150' src='$imgurl' class='attachment-thumbnail size-thumbnail' alt='' />\n";
         $output .= "</dt>\n";
         $output .= "<dd class='wp-caption-text gallery-caption' id='gallery-1-$id'>$voornaam</dd>\n";
         $output .= "</dl>\n";
