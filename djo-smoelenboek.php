@@ -97,6 +97,9 @@ if (!class_exists('DJO_Smoelenboek')) {
       if (is_wp_error($response)) return "Error receiving smoelenboek response: " . $response->get_error_message();
       $json = wp_remote_retrieve_body($response);
       $smoelenboek = json_decode($json);
+      if ($smoelenboek == null || !array_key_exists($dag, $smoelenboek)) {
+        return "Geen toegang (meer) tot het smoelenboek, probeer ajb opnieuw in te loggen!";
+      }
 
       $output = "<div id='gallery-1' class='gallery gallery-columns-4 gallery-size-thumbnail'>\n";
       $counter = 1;
