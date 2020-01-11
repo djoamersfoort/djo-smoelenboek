@@ -12,7 +12,8 @@ defined('ABSPATH') or die('Go away');
 if (!class_exists('DJO_Smoelenboek')) {
   class DJO_Smoelenboek {
 
-    private static $db = null;
+    private const TYPES_MEMBER = array('member','strippenkaart','senior');
+    private const TYPES_MENTOR = array('begeleider', 'bestuur', 'aspirant');
 
     public static function init() {
       add_shortcode('djo_smoelenboek', array('DJO_Smoelenboek', 'smoelenboek'));
@@ -52,7 +53,7 @@ if (!class_exists('DJO_Smoelenboek')) {
         <td><input type="text" name="djo-smoelen-url" value="<?php echo esc_attr( get_option('djo-smoelen-url') ); ?>" /></td>
         </tr>
       </table>
-    <?php
+      <?php
       submit_button();
       echo '</form>';
       echo '</div>';
@@ -77,15 +78,26 @@ if (!class_exists('DJO_Smoelenboek')) {
         $member = json_decode($json);
         $photo = $member->photo;
 
-	return "<img class='alignnone size-thumbnail' src='$photo' alt='' width='$width' height='$height' />";
+	    return "<img class='alignnone size-thumbnail' src='$photo' alt='' width='$width' height='$height' />";
       } else {
         return "Error receiving smoelenboek response: " . $response->get_error_message();
       }
     }
 
+    private static function get_entries_by_type($smoelenboek, $dag, $types = DJO_Smoelenboek::TYPES_MEMBER) {
+        $entries = array();
+        foreach ($smoelenboek->{$dag} as $entry) {
+            if (count(array_intersect($types, explode(',', $entry->types))) > 0) {
+                array_push($entries, $entry);
+            }
+        }
+        return $entries;
+    }
+
     public static function smoelenboek($args) {
-      $params = shortcode_atts(array('dag' => 'vrijdag'), $args);
+      $params = shortcode_atts(array('dag' => 'vrijdag', 'begeleider' => FALSE), $args);
       $dag = $params['dag'];
+      $begeleider = $params['begeleider'];
 
       if (get_current_user_id() == 0) { return; }
 
@@ -101,9 +113,11 @@ if (!class_exists('DJO_Smoelenboek')) {
         return "Geen toegang (meer) tot het smoelenboek, probeer ajb opnieuw in te loggen!";
       }
 
+      $smoelenboek = DJO_Smoelenboek::get_entries_by_type($smoelenboek, $dag, $begeleider ? DJO_Smoelenboek::TYPES_MENTOR : DJO_Smoelenboek::TYPES_MEMBER);
+
       $output = "<div id='gallery-1' class='gallery gallery-columns-4 gallery-size-thumbnail'>\n";
       $counter = 1;
-      foreach ($smoelenboek->{$dag} as $row) {
+      foreach ($smoelenboek as $row) {
         $id = $row->id;
         $voornaam = $row->first_name;
         $imgurl = $row->photo;
