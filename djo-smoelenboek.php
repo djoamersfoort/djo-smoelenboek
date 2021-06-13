@@ -69,7 +69,7 @@ if (!class_exists('DJO_Smoelenboek')) {
       if ($userid == 0) return "Please specify userid";
 
       $idp_access_token = get_user_meta(get_current_user_id(), 'woi_idp_access_token', true);
-      $options = array('headers' => array('Authorization' => "IDP $idp_access_token"));
+      $options = array('headers' => array('Authorization' => "Bearer $idp_access_token"));
       $url = get_option('djo-smoelen-url');
       $response = wp_remote_get("$url/$userid/", $options);
 
@@ -102,7 +102,7 @@ if (!class_exists('DJO_Smoelenboek')) {
       if (get_current_user_id() == 0) { return; }
 
       $idp_access_token = get_user_meta(get_current_user_id(), 'woi_idp_access_token', true);
-      $options = array('headers' => array('Authorization' => "IDP $idp_access_token"));
+      $options = array('headers' => array('Authorization' => "Bearer $idp_access_token"));
       $url = get_option('djo-smoelen-url');
       $response = wp_remote_get("$url/$dag/", $options);
 
