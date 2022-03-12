@@ -109,7 +109,7 @@ if (!class_exists('DJO_Smoelenboek')) {
       if (is_wp_error($response)) return "Error receiving smoelenboek response: " . $response->get_error_message();
       $json = wp_remote_retrieve_body($response);
       $smoelenboek = json_decode($json);
-      if ($smoelenboek == null || !array_key_exists($dag, $smoelenboek)) {
+      if ($smoelenboek == null || !property_exists($smoelenboek, $dag)) {
         return "Geen toegang (meer) tot het smoelenboek, probeer ajb opnieuw in te loggen!";
       }
 
