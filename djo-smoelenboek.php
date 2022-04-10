@@ -4,7 +4,7 @@
  * Plugin URI: https://github.com/rmoesbergen/djo-smoelenboek
  * Description: Plugin voor de DJO smoelenboek koppeling met de ledenadministratie
  * Author: Ronald Moesbergen
- * Version: 0.1.1
+ * Version: 0.2.0
  */
 
 defined('ABSPATH') or die('Go away');
@@ -84,9 +84,9 @@ if (!class_exists('DJO_Smoelenboek')) {
       }
     }
 
-    private static function get_entries_by_type($smoelenboek, $dag, $types = DJO_Smoelenboek::TYPES_MEMBER) {
+    private static function get_entries_by_type($smoelenboek, $types = DJO_Smoelenboek::TYPES_MEMBER) {
         $entries = array();
-        foreach ($smoelenboek->{$dag} as $entry) {
+        foreach ($smoelenboek as $entry) {
             if (count(array_intersect($types, explode(',', $entry->types))) > 0) {
                 array_push($entries, $entry);
             }
@@ -95,8 +95,7 @@ if (!class_exists('DJO_Smoelenboek')) {
     }
 
     public static function smoelenboek($args) {
-      $params = shortcode_atts(array('dag' => 'vrijdag', 'begeleider' => FALSE), $args);
-      $dag = $params['dag'];
+      $params = shortcode_atts(array('begeleider' => FALSE), $args);
       $begeleider = $params['begeleider'];
 
       if (get_current_user_id() == 0) { return; }
@@ -104,16 +103,16 @@ if (!class_exists('DJO_Smoelenboek')) {
       $idp_access_token = get_user_meta(get_current_user_id(), 'woi_idp_access_token', true);
       $options = array('headers' => array('Authorization' => "Bearer $idp_access_token"));
       $url = get_option('djo-smoelen-url');
-      $response = wp_remote_get("$url/$dag/", $options);
+      $response = wp_remote_get("$url/", $options);
 
       if (is_wp_error($response)) return "Error receiving smoelenboek response: " . $response->get_error_message();
       $json = wp_remote_retrieve_body($response);
       $smoelenboek = json_decode($json);
-      if ($smoelenboek == null || !property_exists($smoelenboek, $dag)) {
+      if (!$smoelenboek)  {
         return "Geen toegang (meer) tot het smoelenboek, probeer ajb opnieuw in te loggen!";
       }
 
-      $smoelenboek = DJO_Smoelenboek::get_entries_by_type($smoelenboek, $dag, $begeleider ? DJO_Smoelenboek::TYPES_MENTOR : DJO_Smoelenboek::TYPES_MEMBER);
+      $smoelenboek = DJO_Smoelenboek::get_entries_by_type($smoelenboek, $begeleider ? DJO_Smoelenboek::TYPES_MENTOR : DJO_Smoelenboek::TYPES_MEMBER);
 
       $output = "<div id='gallery-1' class='gallery gallery-columns-4 gallery-size-thumbnail'>\n";
       $counter = 1;
