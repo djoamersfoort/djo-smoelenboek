@@ -115,7 +115,6 @@ if (!class_exists('DJO_Smoelenboek')) {
       $smoelenboek = DJO_Smoelenboek::get_entries_by_type($smoelenboek, $begeleider ? DJO_Smoelenboek::TYPES_MENTOR : DJO_Smoelenboek::TYPES_MEMBER);
 
       $output = "<div id='gallery-1' class='gallery gallery-columns-4 gallery-size-thumbnail'>\n";
-      $counter = 1;
       foreach ($smoelenboek as $row) {
         $id = $row->id;
         $voornaam = $row->first_name;
@@ -127,11 +126,6 @@ if (!class_exists('DJO_Smoelenboek')) {
         $output .= "</dt>\n";
         $output .= "<dd class='wp-caption-text gallery-caption' id='gallery-1-$id'>$voornaam</dd>\n";
         $output .= "</dl>\n";
-
-        if ($counter++ == 4) {
-          $counter = 1;
-          $output .= '<br style="clear: both" />';
-        }
       }
       $output .= '<br style="clear: both"/></div>';
 
