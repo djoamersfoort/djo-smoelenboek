@@ -4,7 +4,7 @@
  * Plugin URI: https://github.com/rmoesbergen/djo-smoelenboek
  * Description: Plugin voor de DJO smoelenboek koppeling met de ledenadministratie
  * Author: Ronald Moesbergen
- * Version: 0.2.0
+ * Version: 0.3.0
  */
 
 defined('ABSPATH') or die('Go away');
@@ -31,6 +31,9 @@ if (!class_exists('DJO_Smoelenboek')) {
       );
 
       register_setting( 'djo-smoelenboek', 'djo-smoelen-url', $options );
+      register_setting( 'djo-smoelenboek', 'djo-smoelen-client-id', $options);
+      register_setting( 'djo-smoelenboek', 'djo-smoelen-client-secret', $options);
+      register_setting( 'djo-smoelenboek', 'djo-smoelen-token-url', $options);
     }
 
     public static function adminmenu() {
@@ -52,11 +55,64 @@ if (!class_exists('DJO_Smoelenboek')) {
         <th scope="row">Ledenadministratie Smoelenboek API URL</th>
         <td><input type="text" name="djo-smoelen-url" value="<?php echo esc_attr( get_option('djo-smoelen-url') ); ?>" /></td>
         </tr>
+
+        <tr valign="top">
+        <th scope="row">OAuth Token Endpoint URL</th>
+        <td><input type="text" name="djo-smoelen-token-url" value="<?php echo esc_attr( get_option('djo-smoelen-token-url') ); ?>" /></td>
+        </tr>
+
+        <tr valign="top">
+        <th scope="row">OAuth Client ID</th>
+        <td><input type="text" name="djo-smoelen-client-id" value="<?php echo esc_attr( get_option('djo-smoelen-client-id') ); ?>" /></td>
+        </tr>
+
+        <tr valign="top">
+        <th scope="row">OAuth Client Secret</th>
+        <td><input type="text" name="djo-smoelen-client-secret" value="<?php echo esc_attr( get_option('djo-smoelen-client-secret') ); ?>" /></td>
+        </tr>
       </table>
       <?php
       submit_button();
       echo '</form>';
       echo '</div>';
+    }
+
+    public static function get_access_token() {
+      $access_token = get_transient('djo-smoelenboek-access-token');
+      if ($access_token) return $access_token;
+
+      // No token in cache -> get a new one
+      $client_id = get_option('djo-smoelen-client-id');
+      $client_secret = get_option('djo-smoelen-client-secret');
+      $token_url = get_option('djo-smoelen-token-url');
+
+      $options = array(
+                'method' => 'POST',
+                'headers' => array(
+                    'Authorization' => 'Basic ' . base64_encode( "${client_id}:${client_secret}" ),
+                    'Content-Type' => 'application/x-www-form-urlencoded',
+                ),
+                'body' => 'grant_type=client_credentials',
+            );
+      $token_response = wp_remote_get($token_url, $options);
+      if (is_wp_error($token_response)) return $token_response;
+
+      $token = json_decode(wp_remote_retrieve_body($token_response));
+      // Cache the new token
+      set_transient('djo-smoelenboek-access-token', $token->access_token, $token->expires_in);
+      return $token->access_token;
+    }
+
+
+    public static function api_request($url) {
+      $token = DJO_Smoelenboek::get_access_token();
+      if (is_wp_error($token)) return $token;
+
+      $options = array('headers' => array('Authorization' => "Bearer $token"));
+      $response = wp_remote_get("$url/$userid/", $options);
+      if (is_wp_error($response)) return $response;
+
+      return json_decode(wp_remote_retrieve_body($response));
     }
 
     public static function smoelenboek_user($args) {
@@ -68,28 +124,22 @@ if (!class_exists('DJO_Smoelenboek')) {
       if (get_current_user_id() == 0) { return; }
       if ($userid == 0) return "Please specify userid";
 
-      $idp_access_token = get_user_meta(get_current_user_id(), 'woi_idp_access_token', true);
-      $options = array('headers' => array('Authorization' => "Bearer $idp_access_token"));
       $url = get_option('djo-smoelen-url');
-      $response = wp_remote_get("$url/$userid/", $options);
+      $member = DJO_Smoelenboek::api_request("$url/$userid/");
+      if (is_wp_error($member))
+        return "Error receiving smoelenboek response: " . $member->get_error_message();
 
-      if (is_array($response)) {
-        $json = wp_remote_retrieve_body($response);
-        $member = json_decode($json);
-        $photo = $member->photo;
+      $photo = $member->photo;
 
-	    return "<img class='alignnone size-thumbnail' src='$photo' alt='' width='$width' height='$height' />";
-      } else {
-        return "Error receiving smoelenboek response: " . $response->get_error_message();
-      }
+      return "<img class='alignnone size-thumbnail' src='$photo' alt='' width='$width' height='$height' />";
     }
 
     private static function get_entries_by_type($smoelenboek, $types = DJO_Smoelenboek::TYPES_MEMBER) {
         $entries = array();
         foreach ($smoelenboek as $entry) {
-            if (count(array_intersect($types, explode(',', $entry->types))) > 0) {
-                array_push($entries, $entry);
-            }
+          if (count(array_intersect($types, explode(',', $entry->types))) > 0) {
+            array_push($entries, $entry);
+          }
         }
         return $entries;
     }
@@ -100,17 +150,13 @@ if (!class_exists('DJO_Smoelenboek')) {
 
       if (get_current_user_id() == 0) { return; }
 
-      $idp_access_token = get_user_meta(get_current_user_id(), 'woi_idp_access_token', true);
-      $options = array('headers' => array('Authorization' => "Bearer $idp_access_token"));
       $url = get_option('djo-smoelen-url');
-      $response = wp_remote_get("$url/", $options);
+      $smoelenboek = DJO_Smoelenboek::api_request("$url/");
 
-      if (is_wp_error($response)) return "Error receiving smoelenboek response: " . $response->get_error_message();
-      $json = wp_remote_retrieve_body($response);
-      $smoelenboek = json_decode($json);
-      if (!$smoelenboek)  {
+      if (is_wp_error($smoelenboek))
+        return "Error receiving smoelenboek response: " . $smoelenboek->get_error_message();
+      if (!$smoelenboek)
         return "Geen toegang (meer) tot het smoelenboek, probeer ajb opnieuw in te loggen!";
-      }
 
       $smoelenboek = DJO_Smoelenboek::get_entries_by_type($smoelenboek, $begeleider ? DJO_Smoelenboek::TYPES_MENTOR : DJO_Smoelenboek::TYPES_MEMBER);
 
