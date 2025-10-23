@@ -121,7 +121,6 @@ if (!class_exists('DJO_Smoelenboek')) {
       $width  = $params['width'];
       $height = $params['height'];
 
-      if (get_current_user_id() == 0) { return; }
       if ($userid == 0) return "Please specify userid";
 
       $url = get_option('djo-smoelen-url');
